@@ -51,24 +51,23 @@ impl Simulation {
         if self.hero.atk_tick >= atk_tick_target && self.hero.stamina >= STAMINA_ATTACK {
             let dmg_min = self.hero.stats().dmg_min();
             let dmg_max = self.hero.stats().dmg_max();
-            let dmg = self.rng.gen_range(dmg_min..=dmg_max);
+            let dmg_raw = self.rng.gen_range(dmg_min..=dmg_max);
 
             let monster_idx = self.get_monster_for_attack();
             {
                 let monster = &mut self.monsters[monster_idx];
-                //TODO: defense not considered
                 //TODO: evade not considered
                 //TODO: counter not considered
                 //TODO: magic damage
+                let dmg = get_dmg_reduced_by_def(dmg_raw, monster.stats().defense());
                 monster.hp -= dmg;
+                result.total_dmg_dealt += dmg;
             }
             //TODO: damage to all
 
             // we just attacked, so reset attack counter
             self.hero.atk_tick = 0;
             self.hero.stamina -= STAMINA_ATTACK;
-
-            result.total_dmg_dealt += dmg;
         }
 
         for monster in &mut self.monsters {
@@ -78,10 +77,12 @@ impl Simulation {
             if monster.atk_tick >= atk_tick_target {
                 let dmg_raw =
                     monster.stats().strength() * self.setup.loop_no() * self.setup.diff_scale();
-                //TODO: defense not considered
+                let dmg = get_dmg_reduced_by_def(dmg_raw, self.hero.stats().defense());
+                
                 //TODO: evade not considered
                 //TODO: counter not considered
-                self.hero.hp -= dmg_raw;
+                self.hero.hp -= dmg;
+                self.hero.stamina += STAMINA_NOEVADE;
                 monster.atk_tick = 0;
                 result.total_dmg_recv_unmigated += dmg_raw;
             }
@@ -124,5 +125,35 @@ impl Simulation {
                 Some(Monster::new(def))
             })
             .collect();
+    }
+}
+
+fn get_dmg_reduced_by_def(dmg: f32, defense: f32) -> f32 {
+    //TODO: completely made-up formula. Actual damage reduction formula for defense is unknown right now
+    let capped_defense = min(30.0, defense);
+    let mut actual_dmg = dmg - capped_defense;
+    if actual_dmg <= 0.0 {
+        return 1.0;
+    }
+    if defense > capped_defense {
+        actual_dmg *= 0.9_f32.powf(defense / 30.0);
+    }
+
+    actual_dmg
+}
+
+fn min(v1: f32, v2: f32) -> f32 {
+    if v1 < v2 {
+        v1
+    } else {
+        v2
+    }
+}
+
+fn max(v1: f32, v2: f32) -> f32 {
+    if v1 > v2 {
+        v1
+    } else {
+        v2
     }
 }
