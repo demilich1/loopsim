@@ -44,6 +44,7 @@ impl Simulation {
     }
 
     fn tick(&mut self, result: &mut CombatResult) {
+        self.hero.atk_tick += 1;
         let atk_tick_target = (ATTSPD_BASE * TICKS_PER_SECOND as f32) as i32;
         if self.hero.atk_tick >= atk_tick_target && self.hero.stamina >= STAMINA_ATTACK {
             let dmg_min = self.hero.stats().dmg_min();
@@ -68,6 +69,19 @@ impl Simulation {
             result.total_damage_dealt += dmg;
         }
 
+        for monster in &mut self.monsters {
+            monster.atk_tick += 1;
+            let atk_tick_target = (monster.stats().spd() * TICKS_PER_SECOND as f32) as i32;
+            if monster.atk_tick >= atk_tick_target {
+                let dmg = monster.stats().strength() * self.setup.loop_no() * self.setup.diff_scale();
+                //TODO: defense not considered
+                //TODO: evade not considered
+                //TODO: counter not considered
+                self.hero.hp -= dmg;
+                monster.atk_tick = 0;
+            }
+        }
+
         self.monsters.retain(|m| !m.is_dead());
         if self.monsters.is_empty() {
             self.respawn_monsters();
@@ -75,8 +89,11 @@ impl Simulation {
         }
 
         // end of tick updates
-        self.hero.atk_tick += 1;
         self.hero.stamina += STAMINA_PERSEC / TICKS_PER_SECOND as f32;
+        //TODO: that means hero cannot exceed starting stamina, is that correct?
+        self.hero.stamina = self.hero.stamina.clamp(0.0, STAMINA_BASE);
+
+        self.ticks += 1;
     }
 
     fn get_monster_for_attack(&mut self) -> usize {

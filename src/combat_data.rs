@@ -2,14 +2,16 @@ use crate::def::MonsterDef;
 
 pub struct CombatSetup {
     loop_no: u16,
+    diff_scale: f32,
     hero: HeroSetup,
     monsters: Vec<String>,
 }
 
 impl CombatSetup {
-    pub fn new(loop_no: u16, hero: HeroSetup, monsters: Vec<String>) -> Self {
+    pub fn new(loop_no: u16, diff_scale: f32, hero: HeroSetup, monsters: Vec<String>) -> Self {
         CombatSetup {
             loop_no,
+            diff_scale,
             hero,
             monsters,
         }
@@ -17,6 +19,10 @@ impl CombatSetup {
 
     pub fn loop_no(&self) -> f32 {
         self.loop_no as f32
+    }
+
+    pub fn diff_scale(&self) -> f32 {
+        self.diff_scale
     }
 
     pub fn hero(&self) -> HeroSetup {
@@ -157,16 +163,21 @@ impl Hero {
 pub struct Monster {
     def: MonsterDef,
     pub hp: f32,
+    pub atk_tick: i32,
 }
 
 impl Monster {
     pub fn new(def: MonsterDef) -> Self {
         let max_hp = def.max_hp();
-        Monster { def, hp: max_hp }
+        Monster { def, hp: max_hp, atk_tick: 0 }
     }
 
     pub fn is_dead(&self) -> bool {
         self.hp <= 0.0
+    }
+
+    pub fn stats(&self) -> &MonsterDef {
+        &self.def
     }
 }
 
