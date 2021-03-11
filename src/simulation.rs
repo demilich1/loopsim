@@ -41,7 +41,8 @@ impl Simulation {
             }
         }
         let secs = self.ticks as f32 / TICKS_PER_SECOND as f32;
-        result.dps = result.total_dmg_dealt / secs;
+        result.duration = secs;
+        result.dps = result.actual_dmg_dealt / secs;
         result
     }
 
@@ -58,14 +59,27 @@ impl Simulation {
                 let monster = &mut self.monsters[monster_idx];
                 //TODO: evade not considered
                 //TODO: counter not considered
-                //TODO: magic damage
-                let dmg = get_dmg_reduced_by_def(dmg_raw, monster.stats().defense());
+                let mut dmg = get_dmg_reduced_by_def(dmg_raw, monster.stats().defense());
+                let dmg_magic = self.hero.stats().magic_dmg();
+                dmg += dmg_magic;
                 monster.hp -= dmg;
-                result.total_dmg_dealt += dmg;
-            }
-            //TODO: damage to all
 
-            // we just attacked, so reset attack counter
+                result.actual_dmg_dealt += dmg;
+                result.unmitigated_dmg_dealt += dmg_raw + dmg_magic;
+            }
+            let dmg_all = self.hero.stats().dmg_all();
+            if dmg_all > 0.0 {
+                for monster in &mut self.monsters {
+                    let dmg = get_dmg_reduced_by_def(dmg_all, monster.stats().defense());
+
+                    monster.hp -= dmg;
+                    
+                    result.actual_dmg_dealt += dmg;
+                    result.unmitigated_dmg_dealt += dmg_all;
+                }
+            }
+
+            // hero just attacked, so reset attack timer
             self.hero.atk_tick = 0;
             self.hero.stamina -= STAMINA_ATTACK;
         }
@@ -78,13 +92,15 @@ impl Simulation {
                 let dmg_raw =
                     monster.stats().strength() * self.setup.loop_no() * self.setup.diff_scale();
                 let dmg = get_dmg_reduced_by_def(dmg_raw, self.hero.stats().defense());
-                
+
                 //TODO: evade not considered
                 //TODO: counter not considered
                 self.hero.hp -= dmg;
                 self.hero.stamina += STAMINA_NOEVADE;
                 monster.atk_tick = 0;
-                result.total_dmg_recv_unmigated += dmg_raw;
+                
+                result.actual_dmg_recv += dmg;
+                result.unmitigated_dmg_recv += dmg_raw;
             }
 
             // monster regeneration; cannot exceed max hp
@@ -97,16 +113,18 @@ impl Simulation {
         // if all monsters are dead, spawn the next set
         if self.monsters.is_empty() {
             self.respawn_monsters();
+            self.hero.atk_tick = 0;
+            self.hero.stamina = STAMINA_BASE;
             result.encounters_cleared += 1;
+        } else {
+            // hero stamina regeneration
+            self.hero.stamina += STAMINA_PERSEC / TICKS_PER_SECOND as f32;
+            //TODO: that means hero cannot exceed starting stamina, is that correct?
+            self.hero.stamina = self.hero.stamina.clamp(0.0, STAMINA_BASE);
+            // hero regeneration; cannot exceed max hp
+            let regen = self.hero.stats().regen() / TICKS_PER_SECOND as f32;
+            self.hero.hp = (self.hero.hp + regen).clamp(0.0, self.hero.stats().max_hp());
         }
-
-        // hero stamina regeneration
-        self.hero.stamina += STAMINA_PERSEC / TICKS_PER_SECOND as f32;
-        //TODO: that means hero cannot exceed starting stamina, is that correct?
-        self.hero.stamina = self.hero.stamina.clamp(0.0, STAMINA_BASE);
-        // hero regeneration; cannot exceed max hp
-        let regen = self.hero.stats().regen() / TICKS_PER_SECOND as f32;
-        self.hero.hp = (self.hero.hp + regen).clamp(0.0, self.hero.stats().max_hp());
 
         self.ticks += 1;
     }
