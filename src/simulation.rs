@@ -47,6 +47,31 @@ impl Simulation {
     }
 
     fn tick(&mut self, result: &mut CombatResult) {
+        self.hero_attack(result);
+        self.monster_attack(result);
+
+        // remove all dead monsters
+        self.monsters.retain(|m| !m.is_dead());
+        // if all monsters are dead, spawn the next set
+        if self.monsters.is_empty() {
+            self.respawn_monsters();
+            self.hero.atk_tick = 0;
+            self.hero.stamina = STAMINA_BASE;
+            result.encounters_cleared += 1;
+        } else {
+            // hero stamina regeneration
+            self.hero.stamina += STAMINA_PERSEC / TICKS_PER_SECOND as f32;
+            //TODO: that means hero cannot exceed starting stamina, is that correct?
+            self.hero.stamina = self.hero.stamina.clamp(0.0, STAMINA_BASE);
+            // hero regeneration; cannot exceed max hp
+            let regen = self.hero.stats().regen() / TICKS_PER_SECOND as f32;
+            self.hero.hp = (self.hero.hp + regen).clamp(0.0, self.hero.stats().max_hp());
+        }
+
+        self.ticks += 1;
+    }
+
+    fn hero_attack(&mut self, result: &mut CombatResult) {
         self.hero.atk_tick += 1;
         let atk_tick_target = (ATTSPD_BASE * TICKS_PER_SECOND as f32) as i32;
         if self.hero.atk_tick >= atk_tick_target && self.hero.stamina >= STAMINA_ATTACK {
@@ -73,7 +98,7 @@ impl Simulation {
                     let dmg = get_dmg_reduced_by_def(dmg_all, monster.stats().defense());
 
                     monster.hp -= dmg;
-                    
+
                     result.actual_dmg_dealt += dmg;
                     result.unmitigated_dmg_dealt += dmg_all;
                 }
@@ -83,7 +108,9 @@ impl Simulation {
             self.hero.atk_tick = 0;
             self.hero.stamina -= STAMINA_ATTACK;
         }
+    }
 
+    fn monster_attack(&mut self, result: &mut CombatResult) {
         for monster in &mut self.monsters {
             monster.atk_tick += 1;
             let atk_tick_target = (monster.stats().spd() * TICKS_PER_SECOND as f32) as i32;
@@ -98,7 +125,7 @@ impl Simulation {
                 self.hero.hp -= dmg;
                 self.hero.stamina += STAMINA_NOEVADE;
                 monster.atk_tick = 0;
-                
+
                 result.actual_dmg_recv += dmg;
                 result.unmitigated_dmg_recv += dmg_raw;
             }
@@ -107,26 +134,6 @@ impl Simulation {
             let regen = monster.stats().regen() / TICKS_PER_SECOND as f32;
             monster.hp = (monster.hp + regen).clamp(0.0, monster.stats().max_hp());
         }
-
-        // remove all dead monsters
-        self.monsters.retain(|m| !m.is_dead());
-        // if all monsters are dead, spawn the next set
-        if self.monsters.is_empty() {
-            self.respawn_monsters();
-            self.hero.atk_tick = 0;
-            self.hero.stamina = STAMINA_BASE;
-            result.encounters_cleared += 1;
-        } else {
-            // hero stamina regeneration
-            self.hero.stamina += STAMINA_PERSEC / TICKS_PER_SECOND as f32;
-            //TODO: that means hero cannot exceed starting stamina, is that correct?
-            self.hero.stamina = self.hero.stamina.clamp(0.0, STAMINA_BASE);
-            // hero regeneration; cannot exceed max hp
-            let regen = self.hero.stats().regen() / TICKS_PER_SECOND as f32;
-            self.hero.hp = (self.hero.hp + regen).clamp(0.0, self.hero.stats().max_hp());
-        }
-
-        self.ticks += 1;
     }
 
     fn get_monster_for_attack(&mut self) -> usize {

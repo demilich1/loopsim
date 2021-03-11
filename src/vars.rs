@@ -1,5 +1,5 @@
 pub const TICKS_PER_SECOND: i32 = 10;
-pub const MAX_TICKS: usize = 10000;
+pub const MAX_TICKS: usize = 12000;
 
 // all of the following constants are copied from variables.ini from the game files
 pub const ATTSPD_BASE: f32 = 1.0;
