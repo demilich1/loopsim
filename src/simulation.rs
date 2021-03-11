@@ -40,6 +40,8 @@ impl Simulation {
                 break;
             }
         }
+        let secs = self.ticks as f32 / TICKS_PER_SECOND as f32;
+        result.dps = result.total_dmg_dealt / secs;
         result
     }
 
@@ -66,32 +68,44 @@ impl Simulation {
             self.hero.atk_tick = 0;
             self.hero.stamina -= STAMINA_ATTACK;
 
-            result.total_damage_dealt += dmg;
+            result.total_dmg_dealt += dmg;
         }
 
         for monster in &mut self.monsters {
             monster.atk_tick += 1;
             let atk_tick_target = (monster.stats().spd() * TICKS_PER_SECOND as f32) as i32;
+            // check if monster is ready to attack
             if monster.atk_tick >= atk_tick_target {
-                let dmg = monster.stats().strength() * self.setup.loop_no() * self.setup.diff_scale();
+                let dmg_raw =
+                    monster.stats().strength() * self.setup.loop_no() * self.setup.diff_scale();
                 //TODO: defense not considered
                 //TODO: evade not considered
                 //TODO: counter not considered
-                self.hero.hp -= dmg;
+                self.hero.hp -= dmg_raw;
                 monster.atk_tick = 0;
+                result.total_dmg_recv_unmigated += dmg_raw;
             }
+
+            // monster regeneration; cannot exceed max hp
+            let regen = monster.stats().regen() / TICKS_PER_SECOND as f32;
+            monster.hp = (monster.hp + regen).clamp(0.0, monster.stats().max_hp());
         }
 
+        // remove all dead monsters
         self.monsters.retain(|m| !m.is_dead());
+        // if all monsters are dead, spawn the next set
         if self.monsters.is_empty() {
             self.respawn_monsters();
             result.encounters_cleared += 1;
         }
 
-        // end of tick updates
+        // hero stamina regeneration
         self.hero.stamina += STAMINA_PERSEC / TICKS_PER_SECOND as f32;
         //TODO: that means hero cannot exceed starting stamina, is that correct?
         self.hero.stamina = self.hero.stamina.clamp(0.0, STAMINA_BASE);
+        // hero regeneration; cannot exceed max hp
+        let regen = self.hero.stats().regen() / TICKS_PER_SECOND as f32;
+        self.hero.hp = (self.hero.hp + regen).clamp(0.0, self.hero.stats().max_hp());
 
         self.ticks += 1;
     }

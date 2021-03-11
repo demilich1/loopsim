@@ -184,14 +184,18 @@ impl Monster {
 #[derive(Debug)]
 pub struct CombatResult {
     pub encounters_cleared: u32,
-    pub total_damage_dealt: f32,
+    pub total_dmg_dealt: f32,
+    pub total_dmg_recv_unmigated: f32,
+    pub dps: f32,
 }
 
 impl CombatResult {
     pub fn new() -> Self {
         CombatResult {
             encounters_cleared: 0,
-            total_damage_dealt: 0.0,
+            total_dmg_dealt: 0.0,
+            total_dmg_recv_unmigated: 0.0,
+            dps: 0.0
         }
     }
 }
