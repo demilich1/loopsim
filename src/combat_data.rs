@@ -182,7 +182,7 @@ impl Monster {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Serialize)]
 pub struct CombatResult {
     pub duration: f32,
     pub encounters_cleared: u32,

@@ -1,2 +1,6 @@
 /target
 *.code-workspace
+Cargo.lock
+bin/
+pkg/
+wasm-pack.log

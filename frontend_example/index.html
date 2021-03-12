@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8" />
+  <title>'Loop Hero' combat simulation </title>
+  <link rel="stylesheet" href="index.css" />
+  <script type="text/javascript" src="index.js"></script>
+</head>
+
+<body>
+  <table>
+    <tr>
+      <td>
+        <label for="radioWarrior">Hero Class</label>
+      </td>
+      <td>
+        <input type="radio" id="radioWarrior" name="radioClass" value="warrior" checked="yes" />
+        <label for="radioWarrior">Warrior</label>
+        <input type="radio" id="radioRogue" name="radioClass" value="rogue" />
+        <label for="radioRogue">Rogue</label>
+        <input type="radio" id="radioNecro" name="radioClass" value="necromancer" />
+        <label for="radioNecro">Necromancer</label>
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <label for="inputLoop">Loop</label>
+      </td>
+      <td>
+        <input id="inputLoop" />
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <label for="selectDifficulty">Difficulty scale</label>
+      </td>
+      <td>
+        <select id="selectDifficulty" name="selectDifficulty">
+          <option value=0.95>Chapter 1 (0.95)</option>
+          <option value=1.00>Chapter 2 (1.00)</option>
+          <option value=1.05>Chapter 3 (1.05)</option>
+          <option value=1.1>Chapter 4 (1.10)</option>
+        </select>
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <label for="inputMaxHp">Max Hp</label>
+      </td>
+      <td>
+        <input id="inputMaxHp" />
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <label for="inputDefense">Defense</label>
+      </td>
+      <td>
+        <input id="inputDefense" />
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <label for="inputDmgMin">Damage (min)</label>
+      </td>
+      <td>
+        <input id="inputDmgMin" />
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <label for="inputDmgMax">Damage (max)</label>
+      </td>
+      <td>
+        <input id="inputDmgMax" />
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <label for="inputDmgAll">Damage (all)</label>
+      </td>
+      <td>
+        <input id="inputDmgAll" />
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <label for="inputDmgMagic">Damage (magic)</label>
+      </td>
+      <td>
+        <input id="inputDmgMagic" />
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <label for="inputEvade">Evade %</label>
+      </td>
+      <td>
+        <input id="inputEvade" />
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <label for="inputCounter">Counter %</label>
+      </td>
+      <td>
+        <input id="inputCounter" />
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <label for="inputAttackSpeed">Attack Speed %</label>
+      </td>
+      <td>
+        <input id="inputAttackSpeed" />
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <label for="inputVampirism">Vampirism %</label>
+      </td>
+      <td>
+        <input id="inputVampirism" />
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <label for="inputRegen">Regeneration (sec)</label>
+      </td>
+      <td>
+        <input id="inputRegen" />
+      </td>
+    </tr>
+  </table>
+  <button onclick="execute()">Submit</button>
+  <script type="module">
+    // Importing WASM as a JS module requires us to call an init function provided by the default export.
+    // This is planned to be changed in the future.
+    import { default as wasm, simulate } from "./pkg/loopsim.js";
+
+    wasm().then((module) => {
+      var result = simulate("test");
+      console.log("Simulation result: " + result);
+    });
+  </script>
+</body>
+
+</html>
