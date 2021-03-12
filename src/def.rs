@@ -5,6 +5,7 @@ pub struct MonsterDef {
     strength: f32,
     defense: f32,
     spd: f32,
+    evade: f32,
     regen: f32,
 }
 
@@ -15,6 +16,7 @@ impl MonsterDef {
         strength: f32,
         defense: f32,
         spd: f32,
+        evade: f32,
         regen: f32,
     ) -> Self {
         MonsterDef {
@@ -23,6 +25,7 @@ impl MonsterDef {
             strength,
             defense,
             spd,
+            evade,
             regen,
         }
     }
@@ -45,6 +48,10 @@ impl MonsterDef {
 
     pub fn spd(&self) -> f32 {
         self.spd
+    }
+
+    pub fn evade(&self) -> f32 {
+        self.evade
     }
 
     pub fn regen(&self) -> f32 {

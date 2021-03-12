@@ -82,15 +82,18 @@ impl Simulation {
             let monster_idx = self.get_monster_for_attack();
             {
                 let monster = &mut self.monsters[monster_idx];
-                //TODO: evade not considered
                 //TODO: counter not considered
-                let mut dmg = get_dmg_reduced_by_def(dmg_raw, monster.stats().defense());
-                let dmg_magic = self.hero.stats().magic_dmg();
-                dmg += dmg_magic;
-                monster.hp -= dmg;
+                let hit_roll: f32 = self.rng.gen_range(0.0..=100.0);
+                if hit_roll > monster.stats().evade() {
+                    let mut dmg = get_dmg_reduced_by_def(dmg_raw, monster.stats().defense());
+                    let dmg_magic = self.hero.stats().magic_dmg();
+                    dmg += dmg_magic;
+                    monster.hp -= dmg;
 
-                result.actual_dmg_dealt += dmg;
-                result.unmitigated_dmg_dealt += dmg_raw + dmg_magic;
+                    result.hits_landed += 1;
+                    result.actual_dmg_dealt += dmg;
+                    result.unmitigated_dmg_dealt += dmg_raw + dmg_magic;
+                }
             }
             let dmg_all = self.hero.stats().dmg_all();
             if dmg_all > 0.0 {
@@ -116,18 +119,25 @@ impl Simulation {
             let atk_tick_target = (monster.stats().spd() * TICKS_PER_SECOND as f32) as i32;
             // check if monster is ready to attack
             if monster.atk_tick >= atk_tick_target {
-                let dmg_raw =
-                    monster.stats().strength() * self.setup.loop_no() * self.setup.diff_scale();
-                let dmg = get_dmg_reduced_by_def(dmg_raw, self.hero.stats().defense());
+                let hit_roll: f32 = self.rng.gen_range(0.0..=100.0);
+                // attack is a hit if it is above the evade threshold
+                // or if the hero does not have enough stamina left for evade
+                if hit_roll > self.hero.stats().evade() || self.hero.stamina < STAMINA_EVADE {
+                    let dmg_raw =
+                        monster.stats().strength() * self.setup.loop_no() * self.setup.diff_scale();
+                    let dmg = get_dmg_reduced_by_def(dmg_raw, self.hero.stats().defense());
 
-                //TODO: evade not considered
-                //TODO: counter not considered
-                self.hero.hp -= dmg;
-                self.hero.stamina += STAMINA_NOEVADE;
-                monster.atk_tick = 0;
+                    //TODO: counter not considered
+                    self.hero.hp -= dmg;
+                    self.hero.stamina += STAMINA_NOEVADE;
+                    monster.atk_tick = 0;
 
-                result.actual_dmg_recv += dmg;
-                result.unmitigated_dmg_recv += dmg_raw;
+                    result.actual_dmg_recv += dmg;
+                    result.unmitigated_dmg_recv += dmg_raw;
+                } else {
+                    self.hero.stamina -= STAMINA_EVADE;
+                    result.hits_evaded += 1;
+                }
             }
 
             // monster regeneration; cannot exceed max hp
@@ -141,13 +151,14 @@ impl Simulation {
     }
 
     fn respawn_monsters(&mut self) {
+        let loop_no = self.setup.loop_no();
         self.monsters = self
             .setup
             .monsters()
             .iter()
             .flat_map(|monster_id| {
                 let def = self.content.get_monster(monster_id)?;
-                Some(Monster::new(def))
+                Some(Monster::new(def, loop_no))
             })
             .collect();
     }

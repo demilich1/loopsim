@@ -1,4 +1,5 @@
 use crate::def::MonsterDef;
+use crate::vars::{EVADE_CAP, VAMPIRISM_CAP};
 
 pub struct CombatSetup {
     loop_no: u16,
@@ -78,8 +79,8 @@ impl HeroSetup {
             crit_chance,
             crit_dmg,
             defense,
-            vampirism,
-            evade,
+            vampirism: vampirism.clamp(0.0, VAMPIRISM_CAP),
+            evade: evade.clamp(0.0, EVADE_CAP),
             regen,
         }
     }
@@ -167,8 +168,8 @@ pub struct Monster {
 }
 
 impl Monster {
-    pub fn new(def: MonsterDef) -> Self {
-        let max_hp = def.max_hp();
+    pub fn new(def: MonsterDef, loop_no: f32) -> Self {
+        let max_hp = def.max_hp() * loop_no;
         Monster { def, hp: max_hp, atk_tick: 0 }
     }
 
@@ -185,10 +186,12 @@ impl Monster {
 pub struct CombatResult {
     pub duration: f32,
     pub encounters_cleared: u32,
+    pub hits_landed: u32,
     pub actual_dmg_dealt: f32,
     pub unmitigated_dmg_dealt: f32,
     pub actual_dmg_recv: f32,
     pub unmitigated_dmg_recv: f32,
+    pub hits_evaded: u32,
     pub dps: f32,
 }
 

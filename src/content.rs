@@ -12,10 +12,10 @@ impl Content {
             monster_defs: HashMap::new(),
         };
 
-        let slime = MonsterDef::new("slime", 13.0, 3.3, 0.0, 0.6, 0.0);
+        let slime = MonsterDef::new("slime", 13.0, 3.3, 0.0, 0.6, 0.0, 0.0);
         content.monster_defs.insert(slime.id().into(), slime);
 
-        let skeleton = MonsterDef::new("skeleton", 12.0, 9.0, 3.5, 0.3, 0.0);
+        let skeleton = MonsterDef::new("skeleton", 12.0, 9.0, 3.5, 0.3, 0.0, 0.0);
         content.monster_defs.insert(skeleton.id().into(), skeleton);
 
         content
