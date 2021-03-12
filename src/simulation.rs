@@ -165,16 +165,15 @@ impl Simulation {
 }
 
 fn get_dmg_reduced_by_def(dmg: f32, defense: f32) -> f32 {
-    //TODO: completely made-up formula. Actual damage reduction formula for defense is unknown right now
-    let capped_defense = min(30.0, defense);
-    let mut actual_dmg = dmg - capped_defense;
-    if actual_dmg <= 0.0 {
-        return 1.0;
+    // DEV said on Discord:
+    // "If the defence is lower than the damage, it's flat reduction
+    // But past half the damage be the dragons"
+    // so we at least know the simple case is correct
+    if dmg > defense {
+        return dmg - defense;
     }
-    if defense > capped_defense {
-        actual_dmg *= 0.9_f32.powf(defense / 30.0);
-    }
-
+    // TODO: completely made-up formula. Actual damage reduction formula for defense is unknown right now
+    let actual_dmg = dmg * (0.9_f32.powf(defense / 30.0));
     actual_dmg
 }
 
